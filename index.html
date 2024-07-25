@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'self' https://*.gohighlevel.com">
     <title>תשלום CardCom</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh;
@@ -31,43 +33,65 @@
         button:hover {
             background-color: #45a049;
         }
+        #debug {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
+    <div id="debug"></div>
     <div id="paymentForm">
         <h2>טופס תשלום CardCom</h2>
         <button id="payButton">בצע תשלום</button>
     </div>
 
     <script>
+    function addDebugMessage(message) {
+        var debugDiv = document.getElementById('debug');
+        debugDiv.innerHTML += message + '<br>';
+        console.log(message);
+    }
+
+    addDebugMessage('דף התשלום נטען');
+
     window.parent.postMessage({
         type: 'custom_provider_ready',
         loaded: true
     }, '*');
+    addDebugMessage('נשלחה הודעת מוכנות');
 
     let paymentData = null;
 
     window.addEventListener('message', function(event) {
+        addDebugMessage('התקבלה הודעה: ' + JSON.stringify(event.data));
         if (event.data.type === 'payment_initiate_props') {
             paymentData = event.data;
-            console.log('התקבלו נתוני תשלום:', paymentData);
+            addDebugMessage('התקבלו נתוני תשלום: ' + JSON.stringify(paymentData));
         }
     });
 
     document.getElementById('payButton').addEventListener('click', function() {
+        addDebugMessage('כפתור תשלום נלחץ');
         if (!paymentData) {
-            console.error('לא התקבלו נתוני תשלום');
+            addDebugMessage('שגיאה: לא התקבלו נתוני תשלום');
+            alert('לא התקבלו נתוני תשלום מ-GHL');
             return;
         }
 
         simulateCardComPayment(paymentData)
             .then(response => {
+                addDebugMessage('תשלום הושלם בהצלחה: ' + JSON.stringify(response));
                 window.parent.postMessage({
                     type: 'custom_element_success_response',
                     chargeId: response.chargeId
                 }, '*');
             })
             .catch(error => {
+                addDebugMessage('שגיאה בתשלום: ' + error.message);
                 window.parent.postMessage({
                     type: 'custom_element_error_response',
                     error: {
