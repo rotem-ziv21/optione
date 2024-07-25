@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment Processing</title>
+    <title>תשלום CardCom</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,70 +14,80 @@
             margin: 0;
             background-color: #f0f0f0;
         }
-        #status {
-            padding: 20px;
-            border-radius: 5px;
+        #paymentForm {
             background-color: white;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
         }
     </style>
 </head>
 <body>
-    <div id="status">Waiting for payment initiation...</div>
+    <div id="paymentForm">
+        <h2>טופס תשלום CardCom</h2>
+        <button id="payButton">בצע תשלום</button>
+    </div>
 
     <script>
-    window.addEventListener('message', function(event) {
-        if (event.data.type === 'payment_initiate_props') {
-            const paymentData = event.data;
-            document.getElementById('status').innerText = 'Processing payment...';
-            
-            const cardcomData = {
-                TerminalNumber: 154042,
-                ApiName: "4eh4Cel12HyLaPn6sN2t",
-                ReturnValue: paymentData.transactionId,
-                Amount: paymentData.amount,
-                SuccessRedirectUrl: "https://example.com/success",
-                FailedRedirectUrl: "https://example.com/failure",
-                WebHookUrl: https://hook.us1.make.com/aock5ba33e7b5q2ix3lb8bdwb1i6sp55",
-                Document: {
-                    To: paymentData.contact ? paymentData.contact.name : "Customer",
-                    Email: paymentData.contact ? paymentData.contact.email : "",
-                    Products: [
-                        {
-                            Description: paymentData.productDetails ? paymentData.productDetails.productId : "Product",
-                            UnitCost: paymentData.amount
-                        }
-                    ]
-                }
-            };
-
-            // Simulate API call (replace this with actual API call in production)
-            setTimeout(() => {
-                const success = Math.random() > 0.5;
-                if (success) {
-                    document.getElementById('status').innerText = 'Payment successful!';
-                    parent.postMessage({
-                        type: 'custom_element_success_response',
-                        chargeId: 'sim_' + Math.random().toString(36).substr(2, 9)
-                    }, '*');
-                } else {
-                    document.getElementById('status').innerText = 'Payment failed.';
-                    parent.postMessage({
-                        type: 'custom_element_error_response',
-                        error: {
-                            description: 'Simulated payment failure'
-                        }
-                    }, '*');
-                }
-            }, 2000);
-        }
-    });
-
-    parent.postMessage({
+    window.parent.postMessage({
         type: 'custom_provider_ready',
         loaded: true
     }, '*');
+
+    let paymentData = null;
+
+    window.addEventListener('message', function(event) {
+        if (event.data.type === 'payment_initiate_props') {
+            paymentData = event.data;
+            console.log('התקבלו נתוני תשלום:', paymentData);
+        }
+    });
+
+    document.getElementById('payButton').addEventListener('click', function() {
+        if (!paymentData) {
+            console.error('לא התקבלו נתוני תשלום');
+            return;
+        }
+
+        simulateCardComPayment(paymentData)
+            .then(response => {
+                window.parent.postMessage({
+                    type: 'custom_element_success_response',
+                    chargeId: response.chargeId
+                }, '*');
+            })
+            .catch(error => {
+                window.parent.postMessage({
+                    type: 'custom_element_error_response',
+                    error: {
+                        description: error.message
+                    }
+                }, '*');
+            });
+    });
+
+    function simulateCardComPayment(paymentData) {
+        return new Promise((resolve, reject) => {
+            setTimeout(() => {
+                if (Math.random() > 0.2) {
+                    resolve({ chargeId: 'CARDCOM_' + Date.now() });
+                } else {
+                    reject(new Error('שגיאה בעיבוד התשלום'));
+                }
+            }, 2000);
+        });
+    }
     </script>
 </body>
 </html>
-
