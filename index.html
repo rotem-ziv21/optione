@@ -50,23 +50,16 @@
     </div>
 
     <script>
+    console.log('Script started');
+
     function addDebugMessage(message) {
+        console.log(message);
         var debugDiv = document.getElementById('debug');
         debugDiv.innerHTML += message + '<br>';
-        console.log(message);
     }
 
-    addDebugMessage('דף התשלום נטען');
-
-    window.parent.postMessage({
-        type: 'custom_provider_ready',
-        loaded: true
-    }, '*');
-    addDebugMessage('נשלחה הודעת מוכנות');
-
-    let paymentData = null;
-
     window.addEventListener('message', function(event) {
+        console.log('Received message:', event.data);
         addDebugMessage('התקבלה הודעה: ' + JSON.stringify(event.data));
         if (event.data.type === 'payment_initiate_props') {
             paymentData = event.data;
@@ -74,31 +67,45 @@
         }
     });
 
-    document.getElementById('payButton').addEventListener('click', function() {
-        addDebugMessage('כפתור תשלום נלחץ');
-        if (!paymentData) {
-            addDebugMessage('שגיאה: לא התקבלו נתוני תשלום');
-            alert('לא התקבלו נתוני תשלום מ-GHL');
-            return;
-        }
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM fully loaded');
+        addDebugMessage('דף התשלום נטען');
 
-        simulateCardComPayment(paymentData)
-            .then(response => {
-                addDebugMessage('תשלום הושלם בהצלחה: ' + JSON.stringify(response));
-                window.parent.postMessage({
-                    type: 'custom_element_success_response',
-                    chargeId: response.chargeId
-                }, '*');
-            })
-            .catch(error => {
-                addDebugMessage('שגיאה בתשלום: ' + error.message);
-                window.parent.postMessage({
-                    type: 'custom_element_error_response',
-                    error: {
-                        description: error.message
-                    }
-                }, '*');
-            });
+        window.parent.postMessage({
+            type: 'custom_provider_ready',
+            loaded: true
+        }, '*');
+        addDebugMessage('נשלחה הודעת מוכנות');
+
+        let paymentData = null;
+
+        document.getElementById('payButton').addEventListener('click', function() {
+            addDebugMessage('כפתור תשלום נלחץ');
+            if (!paymentData) {
+                addDebugMessage('שגיאה: לא התקבלו נתוני תשלום');
+                alert('לא התקבלו נתוני תשלום מ-GHL');
+                return;
+            }
+
+            // כאן תבוא הלוגיקה לביצוע התשלום מול CardCom
+            simulateCardComPayment(paymentData)
+                .then(response => {
+                    addDebugMessage('תשלום הושלם בהצלחה: ' + JSON.stringify(response));
+                    window.parent.postMessage({
+                        type: 'custom_element_success_response',
+                        chargeId: response.chargeId
+                    }, '*');
+                })
+                .catch(error => {
+                    addDebugMessage('שגיאה בתשלום: ' + error.message);
+                    window.parent.postMessage({
+                        type: 'custom_element_error_response',
+                        error: {
+                            description: error.message
+                        }
+                    }, '*');
+                });
+        });
     });
 
     function simulateCardComPayment(paymentData) {
