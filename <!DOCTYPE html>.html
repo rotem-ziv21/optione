@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'self' https://*.gohighlevel.com">
+    <title>תשלום CardCom</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        #paymentForm {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #debug {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="debug"></div>
+    <div id="paymentForm">
+        <h2>טופס תשלום CardCom</h2>
+        <button id="payButton">בצע תשלום</button>
+    </div>
+
+    <script>
+    console.log('Script started');
+
+    function addDebugMessage(message) {
+        console.log(message);
+        var debugDiv = document.getElementById('debug');
+        debugDiv.innerHTML += message + '<br>';
+    }
+
+    window.addEventListener('message', function(event) {
+        console.log('Received message:', event.data);
+        addDebugMessage('התקבלה הודעה: ' + JSON.stringify(event.data));
+        if (event.data.type === 'payment_initiate_props') {
+            paymentData = event.data;
+            addDebugMessage('התקבלו נתוני תשלום: ' + JSON.stringify(paymentData));
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM fully loaded');
+        addDebugMessage('דף התשלום נטען');
+
+        window.parent.postMessage({
+            type: 'custom_provider_ready',
+            loaded: true
+        }, '*');
+        addDebugMessage('נשלחה הודעת מוכנות');
+
+        let paymentData = null;
+
+        document.getElementById('payButton').addEventListener('click', function() {
+            addDebugMessage('כפתור תשלום נלחץ');
+            if (!paymentData) {
+                addDebugMessage('שגיאה: לא התקבלו נתוני תשלום');
+                alert('לא התקבלו נתוני תשלום מ-GHL');
+                return;
+            }
+
+            // כאן תבוא הלוגיקה לביצוע התשלום מול CardCom
+            simulateCardComPayment(paymentData)
+                .then(response => {
+                    addDebugMessage('תשלום הושלם בהצלחה: ' + JSON.stringify(response));
+                    window.parent.postMessage({
+                        type: 'custom_element_success_response',
+                        chargeId: response.chargeId
+                    }, '*');
+                })
+                .catch(error => {
+                    addDebugMessage('שגיאה בתשלום: ' + error.message);
+                    window.parent.postMessage({
+                        type: 'custom_element_error_response',
+                        error: {
+                            description: error.message
+                        }
+                    }, '*');
+                });
+        });
+    });
+
+    function simulateCardComPayment(paymentData) {
+        return new Promise((resolve, reject) => {
+            setTimeout(() => {
+                if (Math.random() > 0.2) {
+                    resolve({ chargeId: 'CARDCOM_' + Date.now() });
+                } else {
+                    reject(new Error('שגיאה בעיבוד התשלום'));
+                }
+            }, 2000);
+        });
+    }
+    </script>
+</body>
+</html>
