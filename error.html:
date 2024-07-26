@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>שגיאה בתשלום</title>
+</head>
+<body>
+    <h1>אירעה שגיאה בתהליך התשלום</h1>
+    <script>
+        window.parent.postMessage({
+            type: 'custom_element_error_response',
+            error: {
+                description: 'אירעה שגיאה בתהליך התשלום'
+            }
+        }, '*');
+    </script>
+</body>
+</html>
