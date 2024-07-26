@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>תשלום הושלם בהצלחה</title>
+</head>
+<body>
+    <h1>התשלום הושלם בהצלחה</h1>
+    <script>
+        window.parent.postMessage({
+            type: 'custom_element_success_response',
+            chargeId: 'CARDCOM_' + Date.now()  // זה יוצר מזהה ייחודי לעסקה
+        }, '*');
+    </script>
+</body>
+</html>
